@@ -29,6 +29,7 @@ const castStringsToNumbers = function (
     preRetirementRateOfReturn: parseFloat(data.preRetirementRateOfReturn) / 100,
     postRetirementRateOfReturn:
       parseFloat(data.postRetirementRateOfReturn) / 100,
+    inflationRate: parseFloat(data.inflationRate) / 100,
   };
 };
 
@@ -79,6 +80,7 @@ const createDataFromNowToRetirement = ({
   currentSavings,
   monthlyContributions,
   preRetirementRateOfReturn,
+  inflationRate,
 }: FormValuesAsNumbers) => {
   return new Array(retirementAge - currentAge).fill(0).map((_, i) => {
     return {
@@ -93,7 +95,7 @@ const createDataFromNowToRetirement = ({
         presentValue: currentSavings,
         years: i,
         annualContributionAmount: monthlyContributions * 12,
-        rateOfReturn: preRetirementRateOfReturn,
+        rateOfReturn: preRetirementRateOfReturn - inflationRate,
       }),
     };
   });
@@ -107,17 +109,19 @@ const createDataFromRetirementToDeath = ({
   otherIncome,
   currentSavings,
   currentAge,
+  inflationRate,
 }: FormValuesAsNumbers) => {
   return new Array(lifeExpectancy - retirementAge + 1).fill(0).map((_, i) => {
+    const Balance = calculateFutureValueInterestWithContributions({
+      presentValue: currentSavings,
+      years: i + 1,
+      annualContributionAmount: -(monthlyBudgetInRetirement * 12) + otherIncome,
+      rateOfReturn: postRetirementRateOfReturn - inflationRate,
+    });
     return {
       years: i + retirementAge - currentAge,
       year: new Date().getFullYear() + i + retirementAge - currentAge,
-      Balance: calculateFutureValueInterestWithContributions({
-        presentValue: currentSavings,
-        years: i + 1,
-        annualContributionAmount: -monthlyBudgetInRetirement * 12 + otherIncome,
-        rateOfReturn: postRetirementRateOfReturn,
-      }),
+      Balance: Balance < 0 ? 0 : Balance,
     };
   });
 };
@@ -165,6 +169,7 @@ type FormValues<T> = {
   otherIncome: T;
   preRetirementRateOfReturn: T;
   postRetirementRateOfReturn: T;
+  inflationRate: T;
 };
 
 type FormValuesAsNumbers = FormValues<number>;
@@ -214,6 +219,7 @@ const defaultValues: FormValuesAsStrings = {
   otherIncome: "0",
   preRetirementRateOfReturn: "8",
   postRetirementRateOfReturn: "5",
+  inflationRate: "3",
 };
 
 function App() {
@@ -378,6 +384,19 @@ function App() {
                     />
                   )}
                 />
+                <Controller
+                  name="inflationRate"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomNumberInput
+                      {...field}
+                      label="Inflation Rate"
+                      placeholder="3"
+                      icon={PercentBadgeIcon}
+                      step={0.05}
+                    />
+                  )}
+                />
               </div>
             </div>
           </Transition>
@@ -392,7 +411,7 @@ function App() {
         <div className="flex">
           <div>
             <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-              You will retire with...
+              You will retire at age {lastSubmitted.retirementAge} with...
             </h3>
             <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
               {Number.isSafeInteger(retirementYearIndex) &&
@@ -402,12 +421,25 @@ function App() {
             </p>
           </div>
           <div className="ml-auto flex flex-col items-end">
-            <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-              {`At age ${lastSubmitted.lifeExpectancy}, you will have...`}
-            </h3>
-            <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
-              {valueFormatter(data[data.length - 1].Balance)}
-            </p>
+            {!getFirstNegativeBalance(data) ? (
+              <>
+                <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+                  {`At age ${lastSubmitted.lifeExpectancy}, you will have...`}
+                </h3>
+                <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
+                  {valueFormatter(data[data.length - 1].Balance)}
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+                  Retirement savings deplete in...
+                </h3>
+                <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
+                  {getFirstNegativeBalance(data)?.year}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -421,6 +453,7 @@ function App() {
           categories={["Balance", "Principal"]}
           colors={["indigo", "cyan"]}
           valueFormatter={valueFormatter}
+          rotateLabelX={{ angle: -45, verticalShift: 15, xAxisHeight: 40 }}
         />
       </Card>
     </div>
@@ -429,6 +462,10 @@ function App() {
 
 const getLargestBalance = (data: SimpleChartData[]) => {
   return Math.max(...data.map((d) => d.Balance));
+};
+
+const getFirstNegativeBalance = (data: SimpleChartData[]) => {
+  return data.find((d) => d.Balance <= 0);
 };
 
 export default App;
