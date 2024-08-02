@@ -71,7 +71,7 @@ type SimpleChartData = {
   years: number;
   year: number;
   Principal?: number;
-  Balance: number;
+  Balance: number | null;
 };
 
 const createDataFromNowToRetirement = ({
@@ -121,7 +121,7 @@ const createDataFromRetirementToDeath = ({
     return {
       years: i + retirementAge - currentAge,
       year: new Date().getFullYear() + i + retirementAge - currentAge,
-      Balance: Balance < 0 ? 0 : Balance,
+      Balance: Balance < 0 ? null : Balance,
     };
   });
 };
@@ -136,7 +136,10 @@ const createFullDataSet = (data: FormValuesAsNumbers) => {
   return [...preRetirement, ...postRetirement];
 };
 
-const valueFormatter = function (number: number) {
+const valueFormatter = function (number: number | null) {
+  if (number === null) {
+    return "Depleted";
+  }
   const truncated = Math.trunc(number * 100) / 100;
   if (Number.isNaN(truncated)) {
     return "Error";
@@ -415,7 +418,8 @@ function App() {
             </h3>
             <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
               {Number.isSafeInteger(retirementYearIndex) &&
-              retirementYearIndex < data.length - 1
+              retirementYearIndex < data.length - 1 &&
+              data[retirementYearIndex].Balance
                 ? valueFormatter(data[retirementYearIndex].Balance)
                 : "Error"}
             </p>
@@ -461,11 +465,11 @@ function App() {
 }
 
 const getLargestBalance = (data: SimpleChartData[]) => {
-  return Math.max(...data.map((d) => d.Balance));
+  return Math.max(...data.map((d) => d.Balance || 0));
 };
 
 const getFirstNegativeBalance = (data: SimpleChartData[]) => {
-  return data.find((d) => d.Balance <= 0);
+  return data.find((d) => (d.Balance ? d.Balance <= 0 : false));
 };
 
 export default App;
