@@ -15,95 +15,135 @@ import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import { PercentBadgeIcon } from "@heroicons/react/24/outline";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 
-const chartdata = [
-  {
-    date: "Jan 22",
-    SolarPanels: 2890,
-    Inverters: 2338,
-  },
-  {
-    date: "Feb 22",
-    SolarPanels: 2756,
-    Inverters: 2103,
-  },
-  {
-    date: "Mar 22",
-    SolarPanels: 3322,
-    Inverters: 2194,
-  },
-  {
-    date: "Apr 22",
-    SolarPanels: 3470,
-    Inverters: 2108,
-  },
-  {
-    date: "May 22",
-    SolarPanels: 3475,
-    Inverters: 1812,
-  },
-  {
-    date: "Jun 22",
-    SolarPanels: 3129,
-    Inverters: 1726,
-  },
-  {
-    date: "Jul 22",
-    SolarPanels: 3490,
-    Inverters: 1982,
-  },
-  {
-    date: "Aug 22",
-    SolarPanels: 2903,
-    Inverters: 2012,
-  },
-  {
-    date: "Sep 22",
-    SolarPanels: 2643,
-    Inverters: 2342,
-  },
-  {
-    date: "Oct 22",
-    SolarPanels: 2837,
-    Inverters: 2473,
-  },
-  {
-    date: "Nov 22",
-    SolarPanels: 2954,
-    Inverters: 3848,
-  },
-  {
-    date: "Dec 22",
-    SolarPanels: 3239,
-    Inverters: 3736,
-  },
-];
-
-const valueFormatter = function (number: number) {
-  return "$ " + new Intl.NumberFormat("us").format(number).toString();
+const castStringsToNumbers = function (
+  data: FormValuesAsStrings
+): FormValuesAsNumbers {
+  return {
+    currentAge: parseInt(data.currentAge),
+    retirementAge: parseInt(data.retirementAge),
+    currentSavings: parseInt(data.currentSavings),
+    monthlyContributions: parseInt(data.monthlyContributions),
+    monthlyBudgetInRetirement: parseInt(data.monthlyBudgetInRetirement),
+    lifeExpectancy: parseInt(data.lifeExpectancy),
+    otherIncome: parseInt(data.otherIncome),
+    preRetirementRateOfReturn: parseFloat(data.preRetirementRateOfReturn) / 100,
+    postRetirementRateOfReturn:
+      parseFloat(data.postRetirementRateOfReturn) / 100,
+  };
 };
 
-export function AreaChartUsageExample() {
+type InterestWithContributionsParameters = {
+  presentValue: number;
+  rateOfReturn: number;
+  years: number;
+  annualContributionAmount: number;
+};
+
+const calculateFutureValueInterestWithContributions = ({
+  presentValue,
+  rateOfReturn,
+  years,
+  annualContributionAmount,
+}: InterestWithContributionsParameters): number => {
+  const futureValueOfPresent = presentValue * Math.pow(1 + rateOfReturn, years);
+  const futureValueOfContributions =
+    annualContributionAmount *
+    ((Math.pow(1 + rateOfReturn, years) - 1) / rateOfReturn);
+  return futureValueOfPresent + futureValueOfContributions;
+};
+
+type PrincipalTotalParameters = {
+  presentValue: number;
+  years: number;
+  annualContributionAmount: number;
+};
+
+const calculatePrincipalTotal = ({
+  presentValue,
+  years,
+  annualContributionAmount,
+}: PrincipalTotalParameters) => {
+  return presentValue + years * annualContributionAmount;
+};
+
+type SimpleChartData = {
+  years: number;
+  year: number;
+  Principal?: number;
+  Balance: number;
+};
+
+const createDataFromNowToRetirement = ({
+  currentAge,
+  retirementAge,
+  currentSavings,
+  monthlyContributions,
+  preRetirementRateOfReturn,
+}: FormValuesAsNumbers) => {
+  return new Array(retirementAge - currentAge).fill(0).map((_, i) => {
+    return {
+      years: i,
+      year: new Date().getFullYear() + i,
+      Principal: calculatePrincipalTotal({
+        presentValue: currentSavings,
+        years: i,
+        annualContributionAmount: monthlyContributions * 12,
+      }),
+      Balance: calculateFutureValueInterestWithContributions({
+        presentValue: currentSavings,
+        years: i,
+        annualContributionAmount: monthlyContributions * 12,
+        rateOfReturn: preRetirementRateOfReturn,
+      }),
+    };
+  });
+};
+
+const createDataFromRetirementToDeath = ({
+  retirementAge,
+  lifeExpectancy,
+  monthlyBudgetInRetirement,
+  postRetirementRateOfReturn,
+  otherIncome,
+  currentSavings,
+  currentAge,
+}: FormValuesAsNumbers) => {
+  return new Array(lifeExpectancy - retirementAge + 1).fill(0).map((_, i) => {
+    return {
+      years: i + retirementAge - currentAge,
+      year: new Date().getFullYear() + i + retirementAge - currentAge,
+      Balance: calculateFutureValueInterestWithContributions({
+        presentValue: currentSavings,
+        years: i + 1,
+        annualContributionAmount: -monthlyBudgetInRetirement * 12 + otherIncome,
+        rateOfReturn: postRetirementRateOfReturn,
+      }),
+    };
+  });
+};
+
+const createFullDataSet = (data: FormValuesAsNumbers) => {
+  const preRetirement = createDataFromNowToRetirement(data);
+  const postRetirement = createDataFromRetirementToDeath({
+    ...data,
+    currentSavings: preRetirement[preRetirement.length - 1].Balance,
+    monthlyContributions: 0,
+  });
+  return [...preRetirement, ...postRetirement];
+};
+
+const valueFormatter = function (number: number) {
+  const truncated = Math.trunc(number * 100) / 100;
+  if (Number.isNaN(truncated)) {
+    return "Error";
+  }
   return (
-    <>
-      <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-        Newsletter Revenue
-      </h3>
-      <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
-        $34,567
-      </p>
-      <AreaChart
-        curveType="natural"
-        className="mt-4 h-72"
-        data={chartdata}
-        index="date"
-        yAxisWidth={65}
-        categories={["SolarPanels", "Inverters"]}
-        colors={["indigo", "cyan"]}
-        valueFormatter={valueFormatter}
-      />
-    </>
+    "$ " +
+    new Intl.NumberFormat("us")
+      .format(Math.trunc(number * 100) / 100)
+      .toString()
   );
-}
+};
 
 type CustomNumberInputProps = {
   label: string;
@@ -114,6 +154,21 @@ type CustomNumberInputProps = {
   step?: number;
 } & NumberInputProps &
   React.RefAttributes<HTMLInputElement>;
+
+type FormValues<T> = {
+  currentAge: T;
+  retirementAge: T;
+  currentSavings: T;
+  monthlyContributions: T;
+  monthlyBudgetInRetirement: T;
+  lifeExpectancy: T;
+  otherIncome: T;
+  preRetirementRateOfReturn: T;
+  postRetirementRateOfReturn: T;
+};
+
+type FormValuesAsNumbers = FormValues<number>;
+type FormValuesAsStrings = FormValues<string>;
 
 const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
   name,
@@ -149,27 +204,42 @@ const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
   );
 };
 
+const defaultValues: FormValuesAsStrings = {
+  currentAge: "30",
+  retirementAge: "67",
+  currentSavings: "35000",
+  monthlyContributions: "1000",
+  monthlyBudgetInRetirement: "5000",
+  lifeExpectancy: "95",
+  otherIncome: "0",
+  preRetirementRateOfReturn: "8",
+  postRetirementRateOfReturn: "5",
+};
+
 function App() {
   const [advanced, setAdvanced] = React.useState(false);
-  const { control, handleSubmit } = useForm({
-    defaultValues: {
-      currentAge: "30",
-      retirementAge: "67",
-      annualPreTaxIncome: "54000",
-      currentSavings: "35000",
-      monthlyContributions: "1000",
-      monthlyBudgetInRetirement: "5000",
-      lifeExpectancy: "95",
-      otherIncome: "0",
-      preRetirementRateOfReturn: "8",
-      postRetirementRateOfReturn: "5",
-    },
+  const [data, setData] = React.useState(
+    createFullDataSet(castStringsToNumbers(defaultValues))
+  );
+  const [lastSubmitted, setLastSubmitted] = React.useState<FormValuesAsNumbers>(
+    castStringsToNumbers(defaultValues)
+  );
+
+  const { control, handleSubmit } = useForm<FormValuesAsStrings>({
+    defaultValues,
   });
 
-  const onSubmit: SubmitHandler<any> = (data) => {
-    console.log(data);
+  const onSubmit: SubmitHandler<any> = (data: FormValuesAsStrings) => {
+    try {
+      const valuesAsNumbers = castStringsToNumbers(data);
+      setData(createFullDataSet(valuesAsNumbers));
+      setLastSubmitted(valuesAsNumbers);
+    } catch {
+      console.log("uh oh :(");
+    }
   };
-
+  const retirementYearIndex =
+    lastSubmitted.retirementAge - lastSubmitted.currentAge - 1;
   return (
     <div className="w-full flex gap-8 content-start items-start">
       <Card className="w-256">
@@ -201,20 +271,7 @@ function App() {
                 />
               )}
             />
-            <Controller
-              name="annualPreTaxIncome"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Annual Pre Tax income"
-                  placeholder="54000"
-                  required={true}
-                  icon={CurrencyDollarIcon}
-                  step={1000}
-                />
-              )}
-            />
+
             <Controller
               name="currentSavings"
               control={control}
@@ -258,7 +315,7 @@ function App() {
               )}
             />
           </div>
-          <div className="flex my-4 items-center">
+          <div className="flex mt-4 items-center">
             <label
               htmlFor="advanced"
               className="text-tremor-default font-medium text-tremor-content dark:text-dark-tremor-content mr-1"
@@ -324,16 +381,54 @@ function App() {
               </div>
             </div>
           </Transition>
-          <Button type="submit" className="mt-4">
-            Submit
-          </Button>
+          <div className="mt-8">
+            <Button type="submit" className="w-full">
+              Submit
+            </Button>
+          </div>
         </form>
       </Card>
-      <Card className="flex-gow">
-        <AreaChartUsageExample />
+      <Card className="flex-grow-1">
+        <div className="flex">
+          <div>
+            <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+              You will retire with...
+            </h3>
+            <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
+              {Number.isSafeInteger(retirementYearIndex) &&
+              retirementYearIndex < data.length - 1
+                ? valueFormatter(data[retirementYearIndex].Balance)
+                : "Error"}
+            </p>
+          </div>
+          <div className="ml-auto flex flex-col items-end">
+            <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+              {`At age ${lastSubmitted.lifeExpectancy}, you will have...`}
+            </h3>
+            <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
+              {valueFormatter(data[data.length - 1].Balance)}
+            </p>
+          </div>
+        </div>
+
+        <AreaChart
+          showAnimation={true}
+          curveType="monotone"
+          className="mt-4 h-72"
+          data={data}
+          index="year"
+          yAxisWidth={getLargestBalance(data).toString().length * 5.5}
+          categories={["Balance", "Principal"]}
+          colors={["indigo", "cyan"]}
+          valueFormatter={valueFormatter}
+        />
       </Card>
     </div>
   );
 }
+
+const getLargestBalance = (data: SimpleChartData[]) => {
+  return Math.max(...data.map((d) => d.Balance));
+};
 
 export default App;
