@@ -1,12 +1,10 @@
 import "./App.css";
 import { AreaChart, Card, Divider, NumberInput, Switch } from "@tremor/react";
-import {
-  RemixiconComponentType,
-  RiMoneyDollarBoxLine,
-  RiPercentLine,
-} from "@remixicon/react";
+
 import React from "react";
 import { Transition } from "@headlessui/react";
+import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { PercentBadgeIcon } from "@heroicons/react/24/outline";
 
 const chartdata = [
   {
@@ -104,7 +102,7 @@ interface CustomNumberInputProps {
   placeholder: string;
   required?: boolean;
   enableStepper?: boolean;
-  icon?: RemixiconComponentType;
+  icon?: React.JSXElementConstructor<any>;
   step?: number;
 }
 
@@ -166,7 +164,7 @@ function App() {
               label="Annual Pre Tax income"
               placeholder="54000"
               required={true}
-              icon={RiMoneyDollarBoxLine}
+              icon={CurrencyDollarIcon}
               step={1000}
             />
             <CustomNumberInput
@@ -174,7 +172,7 @@ function App() {
               label="Current Savings"
               placeholder="35000"
               required={true}
-              icon={RiMoneyDollarBoxLine}
+              icon={CurrencyDollarIcon}
               step={1000}
             />
             <CustomNumberInput
@@ -182,7 +180,7 @@ function App() {
               label="Monthly Contributions"
               placeholder="1000"
               required={true}
-              icon={RiMoneyDollarBoxLine}
+              icon={CurrencyDollarIcon}
               step={100}
             />
             <CustomNumberInput
@@ -190,7 +188,7 @@ function App() {
               label="Monthly Budget in Retirement"
               placeholder="5000"
               required={true}
-              icon={RiMoneyDollarBoxLine}
+              icon={CurrencyDollarIcon}
               step={100}
             />
           </div>
@@ -216,21 +214,21 @@ function App() {
                   name="other-income"
                   label="Other Retirement Income"
                   placeholder="0"
-                  icon={RiMoneyDollarBoxLine}
+                  icon={CurrencyDollarIcon}
                   step={100}
                 />
                 <CustomNumberInput
                   name="pre-retirement--rate-of-return"
                   label="Pre Retirement Rate of Return"
                   placeholder="8"
-                  icon={RiPercentLine}
+                  icon={PercentBadgeIcon}
                   step={0.05}
                 />
                 <CustomNumberInput
                   name="post-retirement--rate-of-return"
                   label="Post Retirement Rate of Return"
                   placeholder="5"
-                  icon={RiPercentLine}
+                  icon={PercentBadgeIcon}
                   step={0.05}
                 />
               </div>
