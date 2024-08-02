@@ -81,10 +81,11 @@ export function AreaChartUsageExample() {
       <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
         Newsletter Revenue
       </h3>
-      <p className="text-tremor-metric text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold">
+      <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
         $34,567
       </p>
       <AreaChart
+        curveType="natural"
         className="mt-4 h-72"
         data={chartdata}
         index="date"
@@ -120,7 +121,7 @@ const CustomNumberInput: React.FC<CustomNumberInputProps> = ({
     <div>
       <label
         htmlFor={name}
-        className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong"
+        className="text-tremor-default font-medium text-tremor-content dark:text-dark-tremor-content"
       >
         {label}
       </label>
@@ -144,6 +145,9 @@ function App() {
   return (
     <div className="w-full flex gap-8 content-start items-start">
       <Card className="w-256">
+        <h3 className="text-tremor-title text-tremor-content-strong dark:text-dark-tremor-content-strong mb-4">
+          Retirement Scenario
+        </h3>
         <form>
           <div className="flex gap-4 flex-col">
             <CustomNumberInput
@@ -193,13 +197,13 @@ function App() {
           <div className="flex my-4 items-center">
             <label
               htmlFor="advanced"
-              className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong mr-1"
+              className="text-tremor-default font-medium text-tremor-content dark:text-dark-tremor-content mr-1"
             >
               Show Advanced
             </label>
             <Switch id="advanced" name="advanced" onChange={setAdvanced} />
           </div>
-          <Transition show={advanced} appear={true}>
+          <Transition show={advanced} appear={true} unmount={false}>
             <div className=" transition duration-300 ease-in data-[closed]:opacity-0 data-[closed]:height-0">
               <Divider />
               <div className="flex gap-4 flex-col">
