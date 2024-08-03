@@ -8,8 +8,7 @@ import {
   NumberInputProps,
   Switch,
 } from "@tremor/react";
-
-import React from "react";
+import React, { useEffect } from "react";
 import { Transition } from "@headlessui/react";
 import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import { PercentBadgeIcon } from "@heroicons/react/24/outline";
@@ -53,6 +52,48 @@ const calculateFutureValueInterestWithContributions = ({
   return futureValueOfPresent + futureValueOfContributions;
 };
 
+type RequiredPresentValueParameters = {
+  rateOfReturn: number;
+  years: number;
+  annualContributionAmount: number;
+  targetBalance: number;
+};
+
+const calculateRequiredPresentValue = ({
+  rateOfReturn,
+  years,
+  annualContributionAmount,
+  targetBalance = 0,
+}: RequiredPresentValueParameters): number => {
+  const futureValueOfContributions =
+    annualContributionAmount *
+    ((Math.pow(1 + rateOfReturn, years) - 1) / rateOfReturn);
+  const requiredPresentValue =
+    (targetBalance - futureValueOfContributions) /
+    Math.pow(1 + rateOfReturn, years);
+  return requiredPresentValue;
+};
+
+type RequiredContributionsParameters = {
+  presentValue: number;
+  rateOfReturn: number;
+  years: number;
+  targetBalance: number;
+};
+
+const calculateRequiredContributions = ({
+  presentValue,
+  rateOfReturn,
+  years,
+  targetBalance,
+}: RequiredContributionsParameters): number => {
+  const futureValueOfPresent = presentValue * Math.pow(1 + rateOfReturn, years);
+  const requiredContributions =
+    (targetBalance - futureValueOfPresent) /
+    ((Math.pow(1 + rateOfReturn, years) - 1) / rateOfReturn);
+  return requiredContributions;
+};
+
 type PrincipalTotalParameters = {
   presentValue: number;
   years: number;
@@ -71,7 +112,8 @@ type SimpleChartData = {
   years: number;
   year: number;
   Principal?: number;
-  Balance: number | null;
+  "Your Balance": number | null;
+  "Optimal Balance": number | null;
 };
 
 const createDataFromNowToRetirement = ({
@@ -81,17 +123,34 @@ const createDataFromNowToRetirement = ({
   monthlyContributions,
   preRetirementRateOfReturn,
   inflationRate,
+  monthlyBudgetInRetirement,
+  postRetirementRateOfReturn,
+  otherIncome,
+  lifeExpectancy,
 }: FormValuesAsNumbers) => {
+  const perfectRetirementAmount = calculateRequiredPresentValue({
+    years: lifeExpectancy - retirementAge + 1,
+    rateOfReturn: postRetirementRateOfReturn - inflationRate,
+    annualContributionAmount: -(monthlyBudgetInRetirement * 12) + otherIncome,
+    targetBalance: 0,
+  });
+  const requiredContributions = calculateRequiredContributions({
+    presentValue: currentSavings,
+    rateOfReturn: preRetirementRateOfReturn - inflationRate,
+    years: retirementAge - currentAge - 1,
+    targetBalance: perfectRetirementAmount,
+  });
   return new Array(retirementAge - currentAge).fill(0).map((_, i) => {
     return {
       years: i,
       year: new Date().getFullYear() + i,
-      Principal: calculatePrincipalTotal({
+      "Optimal Balance": calculateFutureValueInterestWithContributions({
         presentValue: currentSavings,
         years: i,
-        annualContributionAmount: monthlyContributions * 12,
+        annualContributionAmount: requiredContributions,
+        rateOfReturn: preRetirementRateOfReturn - inflationRate,
       }),
-      Balance: calculateFutureValueInterestWithContributions({
+      "Your Balance": calculateFutureValueInterestWithContributions({
         presentValue: currentSavings,
         years: i,
         annualContributionAmount: monthlyContributions * 12,
@@ -111,6 +170,13 @@ const createDataFromRetirementToDeath = ({
   currentAge,
   inflationRate,
 }: FormValuesAsNumbers) => {
+  const perfectRetirementAmount = calculateRequiredPresentValue({
+    years: lifeExpectancy - retirementAge + 1,
+    rateOfReturn: postRetirementRateOfReturn - inflationRate,
+    annualContributionAmount: -(monthlyBudgetInRetirement * 12) + otherIncome,
+    targetBalance: 0,
+  });
+
   return new Array(lifeExpectancy - retirementAge + 1).fill(0).map((_, i) => {
     const Balance = calculateFutureValueInterestWithContributions({
       presentValue: currentSavings,
@@ -121,7 +187,14 @@ const createDataFromRetirementToDeath = ({
     return {
       years: i + retirementAge - currentAge,
       year: new Date().getFullYear() + i + retirementAge - currentAge,
-      Balance: Balance < 0 ? null : Balance,
+      "Your Balance": Balance < 0 ? null : Balance,
+      "Optimal Balance": calculateFutureValueInterestWithContributions({
+        presentValue: perfectRetirementAmount,
+        years: i + 1,
+        annualContributionAmount:
+          -(monthlyBudgetInRetirement * 12) + otherIncome,
+        rateOfReturn: postRetirementRateOfReturn - inflationRate,
+      }),
     };
   });
 };
@@ -130,7 +203,7 @@ const createFullDataSet = (data: FormValuesAsNumbers) => {
   const preRetirement = createDataFromNowToRetirement(data);
   const postRetirement = createDataFromRetirementToDeath({
     ...data,
-    currentSavings: preRetirement[preRetirement.length - 1].Balance,
+    currentSavings: preRetirement[preRetirement.length - 1]["Your Balance"],
     monthlyContributions: 0,
   });
   return [...preRetirement, ...postRetirement];
@@ -216,7 +289,7 @@ const defaultValues: FormValuesAsStrings = {
   currentAge: "30",
   retirementAge: "67",
   currentSavings: "35000",
-  monthlyContributions: "1000",
+  monthlyContributions: "1250",
   monthlyBudgetInRetirement: "5000",
   lifeExpectancy: "95",
   otherIncome: "0",
@@ -234,7 +307,7 @@ function App() {
     castStringsToNumbers(defaultValues)
   );
 
-  const { control, handleSubmit } = useForm<FormValuesAsStrings>({
+  const { control, watch } = useForm<FormValuesAsStrings>({
     defaultValues,
   });
 
@@ -247,6 +320,12 @@ function App() {
       console.log("uh oh :(");
     }
   };
+
+  React.useEffect(() => {
+    const subscription = watch((value) => onSubmit(value));
+    return () => subscription.unsubscribe();
+  }, [watch]);
+
   const retirementYearIndex =
     lastSubmitted.retirementAge - lastSubmitted.currentAge - 1;
   return (
@@ -255,7 +334,7 @@ function App() {
         <h3 className="text-tremor-title text-tremor-content-strong dark:text-dark-tremor-content-strong mb-4">
           Retirement Scenario
         </h3>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form>
           <div className="flex gap-4 flex-col">
             <Controller
               name="currentAge"
@@ -403,11 +482,6 @@ function App() {
               </div>
             </div>
           </Transition>
-          <div className="mt-8">
-            <Button type="submit" className="w-full">
-              Submit
-            </Button>
-          </div>
         </form>
       </Card>
       <Card className="flex-grow-1">
@@ -419,8 +493,8 @@ function App() {
             <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
               {Number.isSafeInteger(retirementYearIndex) &&
               retirementYearIndex < data.length - 1 &&
-              data[retirementYearIndex].Balance
-                ? valueFormatter(data[retirementYearIndex].Balance)
+              data[retirementYearIndex]["Your Balance"]
+                ? valueFormatter(data[retirementYearIndex]["Your Balance"])
                 : "Error"}
             </p>
           </div>
@@ -431,7 +505,7 @@ function App() {
                   {`At age ${lastSubmitted.lifeExpectancy}, you will have...`}
                 </h3>
                 <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
-                  {valueFormatter(data[data.length - 1].Balance)}
+                  {valueFormatter(data[data.length - 1]["Your Balance"])}
                 </p>
               </>
             ) : (
@@ -449,15 +523,16 @@ function App() {
 
         <AreaChart
           showAnimation={true}
-          curveType="monotone"
+          curveType="linear"
           className="mt-4 h-72"
           data={data}
           index="year"
           yAxisWidth={getLargestBalance(data).toString().length * 5.5}
-          categories={["Balance", "Principal"]}
-          colors={["indigo", "cyan"]}
+          categories={["Your Balance", "Optimal Balance"]}
+          colors={["indigo", "pink"]}
           valueFormatter={valueFormatter}
           rotateLabelX={{ angle: -45, verticalShift: 15, xAxisHeight: 40 }}
+          animationDuration={320}
         />
       </Card>
     </div>
@@ -465,11 +540,11 @@ function App() {
 }
 
 const getLargestBalance = (data: SimpleChartData[]) => {
-  return Math.max(...data.map((d) => d.Balance || 0));
+  return Math.max(...data.map((d) => d["Your Balance"] || 0));
 };
 
 const getFirstNegativeBalance = (data: SimpleChartData[]) => {
-  return data.find((d) => (d.Balance ? d.Balance <= 0 : false));
+  return data.find((d) => d["Your Balance"] === null);
 };
 
 export default App;
