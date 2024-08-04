@@ -2,75 +2,76 @@
 export type InterestWithContributionsParameters = {
   presentValue: number;
   rateOfReturn: number;
-  years: number;
-  annualContributionAmount: number;
+  periods: number;
+  contributionAmount: number;
 };
 
 export const calculateFutureValueInterestWithContributions = ({
   presentValue,
   rateOfReturn,
-  years,
-  annualContributionAmount,
+  periods,
+  contributionAmount,
 }: InterestWithContributionsParameters): number => {
-  const futureValueOfPresent = presentValue * Math.pow(1 + rateOfReturn, years);
+  console.table({ presentValue, rateOfReturn, periods, contributionAmount });
+  const futureValueOfPresent = presentValue * Math.pow(1 + rateOfReturn, periods,);
   const futureValueOfContributions =
-    annualContributionAmount *
-    ((Math.pow(1 + rateOfReturn, years) - 1) / rateOfReturn);
+    contributionAmount *
+    ((Math.pow(1 + rateOfReturn, periods) - 1) / rateOfReturn);
   return futureValueOfPresent + futureValueOfContributions;
 };
 
 export type RequiredPresentValueParameters = {
   rateOfReturn: number;
-  years: number;
+  period: number;
   annualContributionAmount: number;
   targetBalance: number;
 };
 
 export const calculateRequiredPresentValue = ({
   rateOfReturn,
-  years,
+  period,
   annualContributionAmount,
   targetBalance = 0,
 }: RequiredPresentValueParameters): number => {
   const futureValueOfContributions =
     annualContributionAmount *
-    ((Math.pow(1 + rateOfReturn, years) - 1) / rateOfReturn);
+    ((Math.pow(1 + rateOfReturn, period) - 1) / rateOfReturn);
   const requiredPresentValue =
     (targetBalance - futureValueOfContributions) /
-    Math.pow(1 + rateOfReturn, years);
+    Math.pow(1 + rateOfReturn, period);
   return requiredPresentValue;
 };
 
 export type RequiredContributionsParameters = {
   presentValue: number;
   rateOfReturn: number;
-  years: number;
+  period: number;
   targetBalance: number;
 };
 
 export const calculateRequiredContributions = ({
   presentValue,
   rateOfReturn,
-  years,
+  period,
   targetBalance,
 }: RequiredContributionsParameters): number => {
-  const futureValueOfPresent = presentValue * Math.pow(1 + rateOfReturn, years);
+  const futureValueOfPresent = presentValue * Math.pow(1 + rateOfReturn, period);
   const requiredContributions =
     (targetBalance - futureValueOfPresent) /
-    ((Math.pow(1 + rateOfReturn, years) - 1) / rateOfReturn);
+    ((Math.pow(1 + rateOfReturn, period) - 1) / rateOfReturn);
   return requiredContributions;
 };
 
 export type PrincipalTotalParameters = {
   presentValue: number;
-  years: number;
-  annualContributionAmount: number;
+  periods: number;
+  contributionAmount: number;
 };
 
 export const calculatePrincipalTotal = ({
   presentValue,
-  years,
-  annualContributionAmount,
+  periods: years,
+  contributionAmount: annualContributionAmount,
 }: PrincipalTotalParameters) => {
   return presentValue + years * annualContributionAmount;
 };

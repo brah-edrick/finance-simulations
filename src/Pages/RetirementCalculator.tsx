@@ -69,7 +69,7 @@ const createDataFromNowToRetirement = ({
   lifeExpectancy,
 }: FormValuesAsNumbers) => {
   const perfectRetirementAmount = calculateRequiredPresentValue({
-    years: lifeExpectancy - retirementAge + 1,
+    period: lifeExpectancy - retirementAge + 1,
     rateOfReturn: postRetirementRateOfReturn - inflationRate,
     annualContributionAmount: -(monthlyBudgetInRetirement * 12) + otherIncome,
     targetBalance: 0,
@@ -77,7 +77,7 @@ const createDataFromNowToRetirement = ({
   const requiredContributions = calculateRequiredContributions({
     presentValue: currentSavings,
     rateOfReturn: preRetirementRateOfReturn - inflationRate,
-    years: retirementAge - currentAge - 1,
+    period: retirementAge - currentAge - 1,
     targetBalance: perfectRetirementAmount,
   });
   return new Array(retirementAge - currentAge).fill(0).map((_, i) => {
@@ -86,14 +86,14 @@ const createDataFromNowToRetirement = ({
       year: new Date().getFullYear() + i,
       "Optimal Balance": calculateFutureValueInterestWithContributions({
         presentValue: currentSavings,
-        years: i,
-        annualContributionAmount: requiredContributions,
+        periods: i,
+        contributionAmount: requiredContributions,
         rateOfReturn: preRetirementRateOfReturn - inflationRate,
       }),
       "Your Balance": calculateFutureValueInterestWithContributions({
         presentValue: currentSavings,
-        years: i,
-        annualContributionAmount: monthlyContributions * 12,
+        periods: i,
+        contributionAmount: monthlyContributions * 12,
         rateOfReturn: preRetirementRateOfReturn - inflationRate,
       }),
     };
@@ -111,7 +111,7 @@ const createDataFromRetirementToDeath = ({
   inflationRate,
 }: FormValuesAsNumbers) => {
   const perfectRetirementAmount = calculateRequiredPresentValue({
-    years: lifeExpectancy - retirementAge + 1,
+    period: lifeExpectancy - retirementAge + 1,
     rateOfReturn: postRetirementRateOfReturn - inflationRate,
     annualContributionAmount: -(monthlyBudgetInRetirement * 12) + otherIncome,
     targetBalance: 0,
@@ -120,21 +120,21 @@ const createDataFromRetirementToDeath = ({
   return new Array(lifeExpectancy - retirementAge + 1).fill(0).map((_, i) => {
     const Balance = calculateFutureValueInterestWithContributions({
       presentValue: currentSavings,
-      years: i + 1,
-      annualContributionAmount: -(monthlyBudgetInRetirement * 12) + otherIncome,
+      periods: i + 1,
+      contributionAmount: -(monthlyBudgetInRetirement * 12) + otherIncome,
+      rateOfReturn: postRetirementRateOfReturn - inflationRate,
+    });
+    const Optimal = calculateFutureValueInterestWithContributions({
+      presentValue: perfectRetirementAmount,
+      periods: i + 1,
+      contributionAmount: -(monthlyBudgetInRetirement * 12) + otherIncome,
       rateOfReturn: postRetirementRateOfReturn - inflationRate,
     });
     return {
       years: i + retirementAge - currentAge,
       year: new Date().getFullYear() + i + retirementAge - currentAge,
       "Your Balance": Balance < 0 ? null : Balance,
-      "Optimal Balance": calculateFutureValueInterestWithContributions({
-        presentValue: perfectRetirementAmount,
-        years: i + 1,
-        annualContributionAmount:
-          -(monthlyBudgetInRetirement * 12) + otherIncome,
-        rateOfReturn: postRetirementRateOfReturn - inflationRate,
-      }),
+      "Optimal Balance": Optimal,
     };
   });
 };
