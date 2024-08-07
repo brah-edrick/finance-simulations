@@ -3,6 +3,7 @@ import "./App.css";
 import { RetirementCalculator } from "./Pages/RetirementCalculator";
 import { CompoundInterestCalculator } from "./Pages/CompoundInterestCalculator";
 import { FIRECalculator } from "./Pages/FIRE";
+import { RoadToMillionaireCalculator } from "./Pages/RoadToMillionaireCalculator";
 
 function App() {
   return (
@@ -10,7 +11,11 @@ function App() {
       <Routes>
         <Route element={<FIRECalculator />} path="FIRE/" />
         <Route element={<RetirementCalculator />} path="retirement/" />
-        <Route element={<CompoundInterestCalculator />} path="interest/" />{" "}
+        <Route element={<CompoundInterestCalculator />} path="interest/" />
+        <Route
+          element={<RoadToMillionaireCalculator />}
+          path="millionaire/"
+        />{" "}
       </Routes>
     </BrowserRouter>
   );
