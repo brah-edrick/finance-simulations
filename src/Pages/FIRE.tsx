@@ -148,10 +148,10 @@ const getLargestBalance = (data: FIRECalculatorChartData[]) => {
 
 const defaultValues: FormValuesAsStrings = {
   currentAge: "30",
-  retirementAge: "45",
-  currentSavings: "120000",
-  monthlyContributions: "3500",
-  monthlyBudgetInRetirement: "4000",
+  retirementAge: "47",
+  currentSavings: "100000",
+  monthlyContributions: "2500",
+  monthlyBudgetInRetirement: "3000",
   lifeExpectancy: "95",
   otherIncome: "0",
   preRetirementRateOfReturn: "10",
