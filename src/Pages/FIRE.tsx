@@ -26,6 +26,7 @@ import {
   calculateFutureValueInterestWithContributions,
   formatNumberToUSD,
 } from "../Utils";
+import { OtherToolsCard } from "../Components/OtherToolsCard";
 
 type FormValues<T> = {
   currentAge: T;
@@ -196,166 +197,172 @@ export const FIRECalculator = () => {
   ];
   const withdrawRateColors = ["pink", "indigo", "lime"];
   const viableWithdrawRates = allWithdrawRates.filter(
-    (rate) => data[data.length - 1][rate]! > 0
+    (rate) =>
+      data[data.length - 1][rate]! > 0 &&
+      (data[retirementYearIndex][rate]! * +rate[0]) / 100 >=
+        lastSubmitted.monthlyBudgetInRetirement * 12
   );
 
   return (
     <div className="w-full flex gap-8 content-start items-start">
-      <Card className="w-256">
-        <h3 className="text-tremor-title text-tremor-content-strong dark:text-dark-tremor-content-strong mb-4">
-          FIRE Calculator
-        </h3>
-        <form>
-          <div className="flex gap-4 flex-col">
-            <Controller
-              name="currentAge"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Current Age"
-                  placeholder="30"
-                  required={true}
-                />
-              )}
-            />
-            <Controller
-              name="retirementAge"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Retirement Age"
-                  placeholder="67"
-                />
-              )}
-            />
+      <div className="w-256 flex gap-8 flex-col">
+        <Card className="w-full">
+          <h3 className="text-tremor-title text-tremor-content-strong dark:text-dark-tremor-content-strong mb-4">
+            FIRE Calculator
+          </h3>
+          <form>
+            <div className="flex gap-4 flex-col">
+              <Controller
+                name="currentAge"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Current Age"
+                    placeholder="30"
+                    required={true}
+                  />
+                )}
+              />
+              <Controller
+                name="retirementAge"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Retirement Age"
+                    placeholder="67"
+                  />
+                )}
+              />
 
-            <Controller
-              name="currentSavings"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Current Savings"
-                  placeholder="35000"
-                  required={true}
-                  icon={CurrencyDollarIcon}
-                  step={1000}
-                />
-              )}
-            />
+              <Controller
+                name="currentSavings"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Current Savings"
+                    placeholder="35000"
+                    required={true}
+                    icon={CurrencyDollarIcon}
+                    step={1000}
+                  />
+                )}
+              />
 
-            <Controller
-              name="monthlyContributions"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Monthly Contributions"
-                  placeholder="500"
-                  required={true}
-                  icon={CurrencyDollarIcon}
-                  step={100}
-                />
-              )}
-            />
-            <Controller
-              name="monthlyBudgetInRetirement"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Monthly Budget in Retirement"
-                  placeholder="4000"
-                  required={true}
-                  icon={CurrencyDollarIcon}
-                  step={100}
-                />
-              )}
-            />
-          </div>
-          <div className="flex mt-4 items-center">
-            <label
-              htmlFor="advanced"
-              className="text-tremor-default font-medium text-tremor-content dark:text-dark-tremor-content mr-1"
-            >
-              Show Advanced
-            </label>
-            <Switch id="advanced" name="advanced" onChange={setAdvanced} />
-          </div>
-          <Transition show={advanced} appear={true} unmount={false}>
-            <div className=" transition duration-300 ease-in data-[closed]:opacity-0 data-[closed]:height-0">
-              <Divider />
-              <div className="flex gap-4 flex-col">
-                <Controller
-                  name="lifeExpectancy"
-                  control={control}
-                  render={({ field }) => (
-                    <CustomNumberInput
-                      {...field}
-                      label="Life Expectancy"
-                      placeholder="0"
-                    />
-                  )}
-                />
-                <Controller
-                  name="otherIncome"
-                  control={control}
-                  render={({ field }) => (
-                    <CustomNumberInput
-                      {...field}
-                      label="Other Retirement Income"
-                      placeholder="0"
-                      icon={CurrencyDollarIcon}
-                      step={100}
-                    />
-                  )}
-                />
-                <Controller
-                  name="preRetirementRateOfReturn"
-                  control={control}
-                  render={({ field }) => (
-                    <CustomNumberInput
-                      {...field}
-                      label="Pre Retirement Rate of Return"
-                      placeholder="8"
-                      icon={PercentBadgeIcon}
-                      step={0.05}
-                    />
-                  )}
-                />
-                <Controller
-                  name="postRetirementRateOfReturn"
-                  control={control}
-                  render={({ field }) => (
-                    <CustomNumberInput
-                      {...field}
-                      label="Post Retirement Rate of Return"
-                      placeholder="5"
-                      icon={PercentBadgeIcon}
-                      step={0.05}
-                    />
-                  )}
-                />
-                <Controller
-                  name="inflationRate"
-                  control={control}
-                  render={({ field }) => (
-                    <CustomNumberInput
-                      {...field}
-                      label="Inflation Rate"
-                      placeholder="3"
-                      icon={PercentBadgeIcon}
-                      step={0.05}
-                    />
-                  )}
-                />
-              </div>
+              <Controller
+                name="monthlyContributions"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Monthly Contributions"
+                    placeholder="500"
+                    required={true}
+                    icon={CurrencyDollarIcon}
+                    step={100}
+                  />
+                )}
+              />
+              <Controller
+                name="monthlyBudgetInRetirement"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Monthly Budget in Retirement"
+                    placeholder="4000"
+                    required={true}
+                    icon={CurrencyDollarIcon}
+                    step={100}
+                  />
+                )}
+              />
             </div>
-          </Transition>
-        </form>
-      </Card>
+            <div className="flex mt-4 items-center">
+              <label
+                htmlFor="advanced"
+                className="text-tremor-default font-medium text-tremor-content dark:text-dark-tremor-content mr-1"
+              >
+                Show Advanced
+              </label>
+              <Switch id="advanced" name="advanced" onChange={setAdvanced} />
+            </div>
+            <Transition show={advanced} appear={true} unmount={false}>
+              <div className=" transition duration-300 ease-in data-[closed]:opacity-0 data-[closed]:height-0">
+                <Divider />
+                <div className="flex gap-4 flex-col">
+                  <Controller
+                    name="lifeExpectancy"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomNumberInput
+                        {...field}
+                        label="Life Expectancy"
+                        placeholder="0"
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="otherIncome"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomNumberInput
+                        {...field}
+                        label="Other Retirement Income"
+                        placeholder="0"
+                        icon={CurrencyDollarIcon}
+                        step={100}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="preRetirementRateOfReturn"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomNumberInput
+                        {...field}
+                        label="Pre Retirement Rate of Return"
+                        placeholder="8"
+                        icon={PercentBadgeIcon}
+                        step={0.05}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="postRetirementRateOfReturn"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomNumberInput
+                        {...field}
+                        label="Post Retirement Rate of Return"
+                        placeholder="5"
+                        icon={PercentBadgeIcon}
+                        step={0.05}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="inflationRate"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomNumberInput
+                        {...field}
+                        label="Inflation Rate"
+                        placeholder="3"
+                        icon={PercentBadgeIcon}
+                        step={0.05}
+                      />
+                    )}
+                  />
+                </div>
+              </div>
+            </Transition>
+          </form>
+        </Card>
+        <OtherToolsCard />
+      </div>
       <div className="flex-grow-1 w-full flex flex-col gap-8">
         <Card>
           <div className="flex">

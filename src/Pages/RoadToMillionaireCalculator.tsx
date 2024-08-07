@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@tremor/react";
 import { CustomNumberInput } from "../Components/CustomNumberInput";
+import { OtherToolsCard } from "../Components/OtherToolsCard";
 
 type FormValues<T> = {
   currentAmount: T;
@@ -143,58 +144,61 @@ export const RoadToMillionaireCalculator: React.FC = () => {
 
   return (
     <div className="w-full flex gap-8 content-start items-start">
-      <Card className="w-256">
-        <h3 className="text-tremor-title text-tremor-content-strong dark:text-dark-tremor-content-strong mb-4">
-          Road to Millionaire Calculator
-        </h3>
-        <form>
-          <div className="flex gap-4 flex-col">
-            <Controller
-              name="currentAmount"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Current Amount"
-                  placeholder="0"
-                  required={true}
-                  icon={CurrencyDollarIcon}
-                  step={100}
-                />
-              )}
-            />
-            <Controller
-              name="monthlyContributions"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Monthly Contributions"
-                  placeholder="100"
-                  required={true}
-                  icon={CurrencyDollarIcon}
-                  step={10}
-                />
-              )}
-            />
+      <div className="w-256 flex gap-8 flex-col">
+        <Card className="w-full">
+          <h3 className="text-tremor-title text-tremor-content-strong dark:text-dark-tremor-content-strong mb-4">
+            Road to Millionaire Calculator
+          </h3>
+          <form>
+            <div className="flex gap-4 flex-col">
+              <Controller
+                name="currentAmount"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Current Amount"
+                    placeholder="0"
+                    required={true}
+                    icon={CurrencyDollarIcon}
+                    step={100}
+                  />
+                )}
+              />
+              <Controller
+                name="monthlyContributions"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Monthly Contributions"
+                    placeholder="100"
+                    required={true}
+                    icon={CurrencyDollarIcon}
+                    step={10}
+                  />
+                )}
+              />
 
-            <Controller
-              name="interestRate"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Interest Rate"
-                  placeholder="10"
-                  required={true}
-                  icon={PercentBadgeIcon}
-                  step={0.1}
-                />
-              )}
-            />
-          </div>
-        </form>
-      </Card>
+              <Controller
+                name="interestRate"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Interest Rate"
+                    placeholder="10"
+                    required={true}
+                    icon={PercentBadgeIcon}
+                    step={0.1}
+                  />
+                )}
+              />
+            </div>
+          </form>
+        </Card>
+        <OtherToolsCard />
+      </div>
       <div className="flex flew-grow-1 w-full flex-col gap-8">
         <Card>
           <div className="flex">
@@ -220,7 +224,7 @@ export const RoadToMillionaireCalculator: React.FC = () => {
             valueFormatter={formatNumberToUSD}
             rotateLabelX={{ angle: -45, verticalShift: 15, xAxisHeight: 40 }}
             animationDuration={320}
-            xAxisLabel="Month"
+            xAxisLabel="Months"
           />
         </Card>
         <Card>

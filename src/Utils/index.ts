@@ -86,9 +86,8 @@ export const formatNumberToUSD = function (number: number | null) {
   }
   
   return (
-    `${truncated < 0 ? "-$" :
-    "$"} ${new Intl.NumberFormat("us")
+    new Intl.NumberFormat("us", {currency: "USD", style: "currency", "minimumFractionDigits": 2})
       .format(Math.abs(truncated))
-      .toString()}
-  `);
+      .toString());
+  
 };

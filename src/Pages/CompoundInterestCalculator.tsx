@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Card, AreaChart } from "@tremor/react";
 import { CustomNumberInput } from "../Components/CustomNumberInput";
+import { OtherToolsCard } from "../Components/OtherToolsCard";
 
 type FormValues<T> = {
   currentAmount: T;
@@ -105,70 +106,73 @@ export const CompoundInterestCalculator: React.FC = () => {
 
   return (
     <div className="w-full flex gap-8 content-start items-start">
-      <Card className="w-256">
-        <h3 className="text-tremor-title text-tremor-content-strong dark:text-dark-tremor-content-strong mb-4">
-          Compound Interest
-        </h3>
-        <form>
-          <div className="flex gap-4 flex-col">
-            <Controller
-              name="currentAmount"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Current Amount"
-                  placeholder="1000"
-                  required={true}
-                  icon={CurrencyDollarIcon}
-                  step={10}
-                />
-              )}
-            />
-            <Controller
-              name="monthlyContributions"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Monthly Contributions"
-                  placeholder="100"
-                  required={true}
-                  icon={CurrencyDollarIcon}
-                  step={10}
-                />
-              )}
-            />
-            <Controller
-              name="years"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Years"
-                  placeholder="10"
-                  required={true}
-                  step={1}
-                />
-              )}
-            />
-            <Controller
-              name="interestRate"
-              control={control}
-              render={({ field }) => (
-                <CustomNumberInput
-                  {...field}
-                  label="Interest Rate"
-                  placeholder="5"
-                  required={true}
-                  icon={PercentBadgeIcon}
-                  step={0.01}
-                />
-              )}
-            />
-          </div>
-        </form>
-      </Card>
+      <div className="w-256 flex gap-8 flex-col">
+        <Card className="w-full">
+          <h3 className="text-tremor-title text-tremor-content-strong dark:text-dark-tremor-content-strong mb-4">
+            Compound Interest
+          </h3>
+          <form>
+            <div className="flex gap-4 flex-col">
+              <Controller
+                name="currentAmount"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Current Amount"
+                    placeholder="1000"
+                    required={true}
+                    icon={CurrencyDollarIcon}
+                    step={10}
+                  />
+                )}
+              />
+              <Controller
+                name="monthlyContributions"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Monthly Contributions"
+                    placeholder="100"
+                    required={true}
+                    icon={CurrencyDollarIcon}
+                    step={10}
+                  />
+                )}
+              />
+              <Controller
+                name="years"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Years"
+                    placeholder="10"
+                    required={true}
+                    step={1}
+                  />
+                )}
+              />
+              <Controller
+                name="interestRate"
+                control={control}
+                render={({ field }) => (
+                  <CustomNumberInput
+                    {...field}
+                    label="Interest Rate"
+                    placeholder="5"
+                    required={true}
+                    icon={PercentBadgeIcon}
+                    step={0.01}
+                  />
+                )}
+              />
+            </div>
+          </form>
+        </Card>
+        <OtherToolsCard />
+      </div>
       <Card className="flex-grow-1">
         <div className="flex">
           <div>
@@ -204,7 +208,7 @@ export const CompoundInterestCalculator: React.FC = () => {
           valueFormatter={formatNumberToUSD}
           rotateLabelX={{ angle: -45, verticalShift: 15, xAxisHeight: 40 }}
           animationDuration={320}
-          xAxisLabel="Month"
+          xAxisLabel="Months"
         />
       </Card>
     </div>
