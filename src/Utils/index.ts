@@ -12,7 +12,6 @@ export const calculateFutureValueInterestWithContributions = ({
   periods,
   contributionAmount,
 }: InterestWithContributionsParameters): number => {
-  console.table({ presentValue, rateOfReturn, periods, contributionAmount });
   const futureValueOfPresent = presentValue * Math.pow(1 + rateOfReturn, periods,);
   const futureValueOfContributions =
     contributionAmount *
@@ -85,10 +84,11 @@ export const formatNumberToUSD = function (number: number | null) {
   if (Number.isNaN(truncated)) {
     return "Error";
   }
+  
   return (
-    "$ " +
-    new Intl.NumberFormat("us")
-      .format(Math.trunc(number * 100) / 100)
-      .toString()
-  );
+    `${truncated < 0 ? "-$" :
+    "$"} ${new Intl.NumberFormat("us")
+      .format(Math.abs(truncated))
+      .toString()}
+  `);
 };
