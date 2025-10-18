@@ -481,7 +481,7 @@ export const RetirementCalculator = () => {
             {!getFirstNegativeBalance(data) ? (
               <>
                 <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-                  {`At age ${lastSubmitted.lifeExpectancy}, you will have...`}
+                  {`At age ${lastSubmitted.lifeExpectancy}, you may have...`}
                 </h3>
                 <p className="text-tremor-metric text-tremor-content dark:text-dark-tremor-content-strong font-semibold">
                   {formatNumberToUSD(data[data.length - 1]["Your Balance"])}
