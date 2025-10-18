@@ -51,9 +51,17 @@ export const calculateFutureValueInterestWithContributions = ({
   
   // Calculate future value of all regular contributions (annuity)
   // Formula: PMT * [((1 + r)^n - 1) / r]
-  const futureValueOfContributions =
-    contributionAmount *
-    ((Math.pow(1 + rateOfReturn, periods) - 1) / rateOfReturn);
+  // Special case: when rateOfReturn = 0, the limit is PMT * n
+  let futureValueOfContributions: number;
+  if (Math.abs(rateOfReturn) < 1e-10) {
+    // Handle the case where rate of return is effectively 0
+    // This prevents divide-by-zero errors when post-retirement rate equals inflation rate
+    futureValueOfContributions = contributionAmount * periods;
+  } else {
+    futureValueOfContributions =
+      contributionAmount *
+      ((Math.pow(1 + rateOfReturn, periods) - 1) / rateOfReturn);
+  }
   
   // Total future value = present value growth + contributions growth
   return futureValueOfPresent + futureValueOfContributions;
@@ -110,9 +118,17 @@ export const calculateRequiredPresentValue = ({
 }: RequiredPresentValueParameters): number => {
   // Calculate the future value of all contributions
   // Formula: PMT * [((1 + r)^n - 1) / r]
-  const futureValueOfContributions =
-    annualContributionAmount *
-    ((Math.pow(1 + rateOfReturn, period) - 1) / rateOfReturn);
+  // Special case: when rateOfReturn = 0, the limit is PMT * n
+  let futureValueOfContributions: number;
+  if (Math.abs(rateOfReturn) < 1e-10) {
+    // Handle the case where rate of return is effectively 0
+    // This prevents divide-by-zero errors when post-retirement rate equals inflation rate
+    futureValueOfContributions = annualContributionAmount * period;
+  } else {
+    futureValueOfContributions =
+      annualContributionAmount *
+      ((Math.pow(1 + rateOfReturn, period) - 1) / rateOfReturn);
+  }
   
   // Calculate required present value by working backwards
   // Formula: (Target - FV_contributions) / (1 + r)^n
@@ -178,9 +194,17 @@ export const calculateRequiredContributions = ({
   
   // Calculate required contributions by working backwards
   // Formula: (Target - FV_present) / [((1 + r)^n - 1) / r]
-  const requiredContributions =
-    (targetBalance - futureValueOfPresent) /
-    ((Math.pow(1 + rateOfReturn, period) - 1) / rateOfReturn);
+  // Special case: when rateOfReturn = 0, the limit is (Target - FV_present) / n
+  let requiredContributions: number;
+  if (Math.abs(rateOfReturn) < 1e-10) {
+    // Handle the case where rate of return is effectively 0
+    // This prevents divide-by-zero errors when post-retirement rate equals inflation rate
+    requiredContributions = (targetBalance - futureValueOfPresent) / period;
+  } else {
+    requiredContributions =
+      (targetBalance - futureValueOfPresent) /
+      ((Math.pow(1 + rateOfReturn, period) - 1) / rateOfReturn);
+  }
   
   return requiredContributions;
 };
