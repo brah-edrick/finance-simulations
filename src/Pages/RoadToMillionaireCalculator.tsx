@@ -1,9 +1,10 @@
 import React from "react";
-import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import {
   calculateFutureValueInterestWithContributions,
   calculatePrincipalTotal,
   formatNumberToUSD,
+  getLargestBalance,
 } from "../Utils";
 import {
   CurrencyDollarIcon,
@@ -21,41 +22,36 @@ import {
 } from "@tremor/react";
 import { CustomNumberInput } from "../Components/CustomNumberInput";
 import { OtherToolsCard } from "../Components/OtherToolsCard";
+import { useCalculatorForm } from "../hooks/useCalculatorForm";
+import {
+  RoadToMillionaireFormValues,
+  CompoundInterestChartData,
+  MILESTONE_AMOUNTS,
+  CHART_COLORS,
+  MAX_CALCULATION_ITERATIONS,
+  MILLIONAIRE_TARGET,
+} from "../types";
+import { DEFAULT_ROAD_TO_MILLIONAIRE_VALUES } from "../constants";
+import { castStringsToNumbers } from "../Utils/dataTransformation";
+import { validateAmount, validatePercentage } from "../Utils/validation";
 
-type FormValues<T> = {
-  currentAmount: T;
-  monthlyContributions: T;
-  interestRate: T;
-};
+type FormValuesAsNumbers = RoadToMillionaireFormValues<number>;
+type FormValuesAsStrings = RoadToMillionaireFormValues<string>;
 
-type FormValuesAsNumbers = FormValues<number>;
-type FormValuesAsStrings = FormValues<string>;
+const defaultValues: FormValuesAsStrings = DEFAULT_ROAD_TO_MILLIONAIRE_VALUES;
 
-type CompoundInterestChartData = {
-  month: number;
-  Balance: number;
-  Principal: number;
-  Interest: number;
-};
-
-const defaultValues: FormValuesAsStrings = {
-  currentAmount: "0",
-  monthlyContributions: "833.33",
-  interestRate: "7",
-};
-
-const castStringsToNumbers = (
-  defaultFormValues: FormValuesAsStrings
-): FormValuesAsNumbers => {
-  return Object.fromEntries(
-    Object.entries(defaultFormValues).map(([key, value]) => [
-      key,
-      parseFloat(value),
-    ])
-  ) as FormValuesAsNumbers;
-};
-
-const convertMonthsToYearsAndMonths = (months: number) => {
+/**
+ * Converts a number of months into a human-readable string format.
+ *
+ * @param months - Number of months to convert
+ * @returns Formatted string like "2 years and 3 months" or "1 year" or "5 months"
+ *
+ * @example
+ * convertMonthsToYearsAndMonths(27) // Returns "2 years and 3 months"
+ * convertMonthsToYearsAndMonths(12) // Returns "1 year"
+ * convertMonthsToYearsAndMonths(5)  // Returns "5 months"
+ */
+const convertMonthsToYearsAndMonths = (months: number): string => {
   const years = Math.floor(months / 12);
   const remainingMonths = months % 12;
   return `${years > 1 ? `${years} years` : years === 1 ? `1 year` : ""} ${
@@ -63,19 +59,27 @@ const convertMonthsToYearsAndMonths = (months: number) => {
   }${remainingMonths > 0 ? `${remainingMonths} months` : ""}`;
 };
 
-const HundredThousandMilestones = [
-  100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000,
-  1000000,
-];
-
-const DataColors = ["indigo", "pink", "lime"];
-
+/**
+ * Creates chart data for the "Road to Millionaire" calculator.
+ *
+ * This function calculates month-by-month data until the investment reaches
+ * the millionaire target ($1,000,000). It shows the growth of balance, principal,
+ * and interest over time, stopping when the target is reached or after a maximum
+ * number of iterations to prevent infinite loops.
+ *
+ * The calculation uses monthly compounding and includes both the initial investment
+ * and regular monthly contributions.
+ *
+ * @param params - Investment parameters
+ * @returns Array of monthly chart data points until millionaire target is reached
+ */
 const createFullDataSet = ({
   currentAmount,
   monthlyContributions,
   interestRate,
 }: FormValuesAsNumbers): CompoundInterestChartData[] => {
-  let data: CompoundInterestChartData[] = [
+  // Initialize with month 0 (starting point)
+  const initialData: CompoundInterestChartData[] = [
     {
       month: 0,
       Balance: currentAmount,
@@ -83,64 +87,101 @@ const createFullDataSet = ({
       Interest: 0,
     },
   ];
-  let i = 1;
-  while (data[data.length - 1].Balance < 1000000) {
-    if (i > 1000) {
+
+  let i = 1; // Start from month 1
+  let data = [...initialData];
+
+  // Continue calculating until we reach the millionaire target
+  while (data[data.length - 1].Balance < MILLIONAIRE_TARGET) {
+    // Safety check to prevent infinite loops
+    if (i > MAX_CALCULATION_ITERATIONS) {
       break;
     }
+
+    // Calculate total balance including compound interest
     const Balance = calculateFutureValueInterestWithContributions({
       presentValue: currentAmount,
-      periods: i,
+      periods: i, // Number of months
       contributionAmount: monthlyContributions,
-      rateOfReturn: interestRate / 100 / 12,
+      rateOfReturn: interestRate / 100 / 12, // Convert annual rate to monthly rate
     });
+
+    // Calculate total principal (contributions only)
     const Principal = calculatePrincipalTotal({
       presentValue: currentAmount,
       periods: i,
       contributionAmount: monthlyContributions,
     });
-    console.log(Balance, Principal, Balance - Principal);
+
+    // Add this month's data point
     data.push({
       month: i,
-      Balance,
-      Principal,
-      Interest: Balance - Principal,
+      Balance, // Total value
+      Principal, // Total contributions
+      Interest: Balance - Principal, // Interest earned
     });
+
     i++;
   }
+
   return data;
 };
 
 export const RoadToMillionaireCalculator: React.FC = () => {
   const [data, setData] = React.useState(
-    createFullDataSet(castStringsToNumbers(defaultValues))
+    createFullDataSet(
+      castStringsToNumbers(defaultValues) as FormValuesAsNumbers
+    )
   );
   const [lastSubmitted, setLastSubmitted] = React.useState<FormValuesAsNumbers>(
-    castStringsToNumbers(defaultValues)
+    castStringsToNumbers(defaultValues) as FormValuesAsNumbers
   );
 
-  const { control, watch } = useForm<FormValuesAsStrings>({
-    defaultValues,
-  });
+  const onSubmit = (formData: FormValuesAsStrings) => {
+    const valuesAsNumbers = castStringsToNumbers(
+      formData
+    ) as FormValuesAsNumbers;
 
-  const onSubmit: SubmitHandler<any> = (data: FormValuesAsStrings) => {
-    try {
-      const valuesAsNumbers = castStringsToNumbers(data);
-      setData(createFullDataSet(valuesAsNumbers));
-      setLastSubmitted(valuesAsNumbers);
-    } catch {
-      console.log("uh oh :(");
+    // Validate inputs
+    const currentAmountValidation = validateAmount(
+      valuesAsNumbers.currentAmount,
+      "Current Amount"
+    );
+    const monthlyContributionsValidation = validateAmount(
+      valuesAsNumbers.monthlyContributions,
+      "Monthly Contributions"
+    );
+    const interestRateValidation = validatePercentage(
+      valuesAsNumbers.interestRate,
+      "Interest Rate"
+    );
+
+    if (
+      !currentAmountValidation.isValid ||
+      !monthlyContributionsValidation.isValid ||
+      !interestRateValidation.isValid
+    ) {
+      console.error("Validation errors:", [
+        ...currentAmountValidation.errors,
+        ...monthlyContributionsValidation.errors,
+        ...interestRateValidation.errors,
+      ]);
+      return;
     }
+
+    setData(createFullDataSet(valuesAsNumbers));
+    setLastSubmitted(valuesAsNumbers);
   };
 
-  React.useEffect(() => {
-    const subscription = watch((value) => onSubmit(value));
-    return () => subscription.unsubscribe();
-  }, [watch]);
+  const { control } = useCalculatorForm({
+    defaultValues,
+    onSubmit,
+    debounceMs: 300,
+  });
 
-  function getLargestBalance(data: CompoundInterestChartData[]) {
-    return Math.max(...data.map((entry) => entry.Balance));
-  }
+  // Calculate Y-axis width for chart display
+  const yAxisWidth =
+    getLargestBalance(data, (d) => d.Balance).toString().length * 5.5;
 
   return (
     <div className="w-full flex gap-8 content-start items-start">
@@ -199,7 +240,7 @@ export const RoadToMillionaireCalculator: React.FC = () => {
         </Card>
         <OtherToolsCard />
       </div>
-      <div className="flex flew-grow-1 w-full flex-col gap-8">
+      <div className="flex flex-grow-1 w-full flex-col gap-8">
         <Card>
           <div className="flex">
             <div>
@@ -218,9 +259,9 @@ export const RoadToMillionaireCalculator: React.FC = () => {
             className="mt-4 h-72"
             data={data}
             index="month"
-            yAxisWidth={getLargestBalance(data).toString().length * 5.5}
+            yAxisWidth={yAxisWidth}
             categories={["Balance", "Principal", "Interest"]}
-            colors={DataColors}
+            colors={CHART_COLORS}
             valueFormatter={formatNumberToUSD}
             rotateLabelX={{ angle: -45, verticalShift: 15, xAxisHeight: 40 }}
             animationDuration={320}
@@ -236,7 +277,7 @@ export const RoadToMillionaireCalculator: React.FC = () => {
                 <TableHeaderCell>
                   <span className="inline-flex items-center">
                     <span
-                      className={`flex w-2 h-2 me-2 bg-${DataColors[0]}-500 rounded-full`}
+                      className={`flex w-2 h-2 me-2 bg-${CHART_COLORS[0]}-500 rounded-full`}
                     ></span>
                   </span>
                   Balance
@@ -244,7 +285,7 @@ export const RoadToMillionaireCalculator: React.FC = () => {
                 <TableHeaderCell>
                   <span className="inline-flex items-center">
                     <span
-                      className={`flex w-2 h-2 me-2 bg-${DataColors[1]}-500 rounded-full`}
+                      className={`flex w-2 h-2 me-2 bg-${CHART_COLORS[1]}-500 rounded-full`}
                     ></span>
                   </span>
                   Principal
@@ -252,7 +293,7 @@ export const RoadToMillionaireCalculator: React.FC = () => {
                 <TableHeaderCell>
                   <span className="inline-flex items-center">
                     <span
-                      className={`flex w-2 h-2 me-2 bg-${DataColors[2]}-500 rounded-full`}
+                      className={`flex w-2 h-2 me-2 bg-${CHART_COLORS[2]}-500 rounded-full`}
                     ></span>
                   </span>
                   Interest
@@ -261,8 +302,8 @@ export const RoadToMillionaireCalculator: React.FC = () => {
             </TableHead>
 
             <TableBody>
-              {HundredThousandMilestones.map((ms, i) => {
-                const previousMilestone = HundredThousandMilestones[i - 1] || 0;
+              {MILESTONE_AMOUNTS.map((ms, i) => {
+                const previousMilestone = MILESTONE_AMOUNTS[i - 1] || 0;
                 const milestone = data.find((entry) => entry.Balance >= ms);
                 const previousMilestoneEntry = data.find(
                   (entry) => entry.Balance >= previousMilestone
@@ -281,7 +322,7 @@ export const RoadToMillionaireCalculator: React.FC = () => {
                     <TableCell>
                       <span
                         className={
-                          milestone.Balance > 1000000
+                          milestone.Balance > MILLIONAIRE_TARGET
                             ? "text-yellow-600 dark:text-yellow-400"
                             : ""
                         }
@@ -293,7 +334,7 @@ export const RoadToMillionaireCalculator: React.FC = () => {
                       {formatNumberToUSD(milestone.Principal)}
                     </TableCell>
                     <TableCell>
-                      {formatNumberToUSD(milestone.Interest)}
+                      {formatNumberToUSD(milestone.Interest || 0)}
                     </TableCell>
                   </TableRow>
                 );

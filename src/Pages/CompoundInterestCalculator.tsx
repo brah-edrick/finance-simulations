@@ -1,9 +1,10 @@
 import React from "react";
-import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import {
   calculateFutureValueInterestWithContributions,
   calculatePrincipalTotal,
   formatNumberToUSD,
+  getLargestBalance,
 } from "../Utils";
 import {
   CurrencyDollarIcon,
@@ -12,97 +13,123 @@ import {
 import { Card, AreaChart } from "@tremor/react";
 import { CustomNumberInput } from "../Components/CustomNumberInput";
 import { OtherToolsCard } from "../Components/OtherToolsCard";
+import { useCalculatorForm } from "../hooks/useCalculatorForm";
+import {
+  CompoundInterestFormValues,
+  CompoundInterestChartData,
+  CHART_COLORS,
+} from "../types";
+import { DEFAULT_COMPOUND_INTEREST_VALUES } from "../constants";
+import { castStringsToNumbers } from "../Utils/dataTransformation";
+import { validateAmount, validatePercentage } from "../Utils/validation";
 
-type FormValues<T> = {
-  currentAmount: T;
-  monthlyContributions: T;
-  years: T;
-  interestRate: T;
-};
+type FormValuesAsNumbers = CompoundInterestFormValues<number>;
+type FormValuesAsStrings = CompoundInterestFormValues<string>;
 
-type FormValuesAsNumbers = FormValues<number>;
-type FormValuesAsStrings = FormValues<string>;
+const defaultValues: FormValuesAsStrings = DEFAULT_COMPOUND_INTEREST_VALUES;
 
-type CompoundInterestChartData = {
-  month: number;
-  Balance: number;
-  Principal: number;
-};
-
-const defaultValues: FormValuesAsStrings = {
-  currentAmount: "3000",
-  monthlyContributions: "100",
-  years: "15",
-  interestRate: "5",
-};
-
-const castStringsToNumbers = (
-  defaultFormValues: FormValuesAsStrings
-): FormValuesAsNumbers => {
-  return Object.fromEntries(
-    Object.entries(defaultFormValues).map(([key, value]) => [
-      key,
-      parseFloat(value),
-    ])
-  ) as FormValuesAsNumbers;
-};
-
+/**
+ * Creates chart data for compound interest calculations with monthly granularity.
+ *
+ * This function generates month-by-month data showing the growth of an investment
+ * with regular monthly contributions. It calculates both the total balance (including
+ * interest) and the principal amount (contributions only) for each month.
+ *
+ * The calculation uses monthly compounding, converting the annual interest rate
+ * to a monthly rate by dividing by 12.
+ *
+ * @param params - Investment parameters
+ * @returns Array of monthly chart data points
+ */
 const createFullDataSet = ({
   currentAmount,
   monthlyContributions,
   years,
   interestRate,
 }: FormValuesAsNumbers): CompoundInterestChartData[] => {
+  // Calculate total number of months (including month 0)
   const months = years * 12 + 1;
+
+  // Generate month-by-month data
   return new Array(months).fill(0).map((_, i) => {
+    // Calculate total balance including compound interest
     const Balance = calculateFutureValueInterestWithContributions({
       presentValue: currentAmount,
-      periods: i,
+      periods: i, // Number of months
       contributionAmount: monthlyContributions,
-      rateOfReturn: interestRate / 100 / 12,
+      rateOfReturn: interestRate / 100 / 12, // Convert annual rate to monthly rate
     });
+
     return {
       month: i,
-      Balance,
+      Balance, // Total value (principal + interest)
       Principal: calculatePrincipalTotal({
         presentValue: currentAmount,
         periods: i,
         contributionAmount: monthlyContributions,
-      }),
+      }), // Total contributions made
     };
   });
 };
 
 export const CompoundInterestCalculator: React.FC = () => {
   const [data, setData] = React.useState(
-    createFullDataSet(castStringsToNumbers(defaultValues))
+    createFullDataSet(
+      castStringsToNumbers(defaultValues) as FormValuesAsNumbers
+    )
   );
   const [lastSubmitted, setLastSubmitted] = React.useState<FormValuesAsNumbers>(
-    castStringsToNumbers(defaultValues)
+    castStringsToNumbers(defaultValues) as FormValuesAsNumbers
   );
 
-  const { control, watch } = useForm<FormValuesAsStrings>({
-    defaultValues,
-  });
+  const onSubmit = (formData: FormValuesAsStrings) => {
+    const valuesAsNumbers = castStringsToNumbers(
+      formData
+    ) as FormValuesAsNumbers;
 
-  const onSubmit: SubmitHandler<any> = (data: FormValuesAsStrings) => {
-    try {
-      const valuesAsNumbers = castStringsToNumbers(data);
-      setData(createFullDataSet(valuesAsNumbers));
-      setLastSubmitted(valuesAsNumbers);
-    } catch {
-      console.log("uh oh :(");
+    // Validate inputs
+    const currentAmountValidation = validateAmount(
+      valuesAsNumbers.currentAmount,
+      "Current Amount"
+    );
+    const monthlyContributionsValidation = validateAmount(
+      valuesAsNumbers.monthlyContributions,
+      "Monthly Contributions"
+    );
+    const yearsValidation = validateAmount(valuesAsNumbers.years, "Years");
+    const interestRateValidation = validatePercentage(
+      valuesAsNumbers.interestRate,
+      "Interest Rate"
+    );
+
+    if (
+      !currentAmountValidation.isValid ||
+      !monthlyContributionsValidation.isValid ||
+      !yearsValidation.isValid ||
+      !interestRateValidation.isValid
+    ) {
+      console.error("Validation errors:", [
+        ...currentAmountValidation.errors,
+        ...monthlyContributionsValidation.errors,
+        ...yearsValidation.errors,
+        ...interestRateValidation.errors,
+      ]);
+      return;
     }
+
+    setData(createFullDataSet(valuesAsNumbers));
+    setLastSubmitted(valuesAsNumbers);
   };
 
-  React.useEffect(() => {
-    const subscription = watch((value) => onSubmit(value));
-    return () => subscription.unsubscribe();
-  }, [watch]);
+  const { control } = useCalculatorForm({
+    defaultValues,
+    onSubmit,
+    debounceMs: 300,
+  });
 
-  function getLargestBalance(data: CompoundInterestChartData[]) {
-    return Math.max(...data.map((entry) => entry.Balance));
-  }
+  // Calculate Y-axis width for chart display
+  const yAxisWidth =
+    getLargestBalance(data, (d) => d.Balance).toString().length * 5.5;
 
   return (
     <div className="w-full flex gap-8 content-start items-start">
@@ -202,9 +229,9 @@ export const CompoundInterestCalculator: React.FC = () => {
           className="mt-4 h-72"
           data={data}
           index="month"
-          yAxisWidth={getLargestBalance(data).toString().length * 5.5}
+          yAxisWidth={yAxisWidth}
           categories={["Balance", "Principal"]}
-          colors={["indigo", "pink"]}
+          colors={CHART_COLORS.slice(0, 2)}
           valueFormatter={formatNumberToUSD}
           rotateLabelX={{ angle: -45, verticalShift: 15, xAxisHeight: 40 }}
           animationDuration={320}

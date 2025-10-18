@@ -23,7 +23,7 @@ function App() {
               path="millionaire/"
             />
             <Route
-              element={<Navigate to="interest/" replace={true} />}
+              element={<Navigate to="/retirement" replace={true} />}
               path="/"
             />
           </Routes>
