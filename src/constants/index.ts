@@ -74,7 +74,7 @@ export const DEFAULT_CURRENT_AGE = 30;
 /**
  * Default monthly contributions amount.
  */
-export const DEFAULT_MONTHLY_CONTRIBUTIONS = 500;
+export const DEFAULT_MONTHLY_CONTRIBUTIONS = 1250;
 
 /**
  * Default life expectancy age.

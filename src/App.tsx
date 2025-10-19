@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom"; // use HashRouter for GitHub Pages
 import "./App.css";
 import { RetirementCalculator } from "./Pages/RetirementCalculator";
 import { CompoundInterestCalculator } from "./Pages/CompoundInterestCalculator";
@@ -13,7 +13,7 @@ function App() {
   return (
     <>
       <div className="min-h-[100vh]">
-        <BrowserRouter>
+        <HashRouter>
           <Routes>
             <Route element={<FIRECalculator />} path="FIRE/" />
             <Route element={<RetirementCalculator />} path="retirement/" />
@@ -27,7 +27,7 @@ function App() {
               path="/"
             />
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </div>
       <div className="flex gap-2 mt-16 flex-col">
         <Callout
